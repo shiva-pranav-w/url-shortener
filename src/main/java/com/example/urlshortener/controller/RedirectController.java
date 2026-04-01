@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequiredArgsConstructor
 public class RedirectController {

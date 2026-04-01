@@ -17,28 +17,30 @@ public class HitCountScheduler {
 
     @Scheduled(fixedRate = 30000) // every 30 secs
     public void syncHitCounts(){
+        try{
+            Set<String> keys = redisTemplate.keys("hit:*");
 
-        Set<String> keys = redisTemplate.keys("hit:*");
+            if(keys == null || keys.isEmpty()){
+                return;
+            }
 
-        if(keys == null || keys.isEmpty()){
-            return;
+            for(String key:keys){
+                String shortCode = key.replace("hit:", "");
+                String value = redisTemplate.opsForValue().get(key);
+
+                if(value == null) continue;
+
+                Long hits = Long.parseLong(value);
+
+                urlRepository.findByShortCode(shortCode).ifPresent(url -> {
+                    url.setHitCount(url.getHitCount() + hits);
+                    urlRepository.save(url);
+                });
+
+                redisTemplate.delete(key);
+            }
+        } catch(Exception e) {
+            System.out.println("Redis not available, skipping...");
         }
-
-        for(String key:keys){
-            String shortCode = key.replace("hit:", "");
-            String value = redisTemplate.opsForValue().get(key);
-
-            if(value == null) continue;
-
-            Long hits = Long.parseLong(value);
-
-            urlRepository.findByShortCode(shortCode).ifPresent(url -> {
-                url.setHitCount(url.getHitCount() + hits);
-                urlRepository.save(url);
-            });
-
-            redisTemplate.delete(key);
-        }
-
     }
 }
